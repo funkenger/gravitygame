@@ -5,7 +5,7 @@ import android.widget.CheckBox
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.juga.platform.R
-import com.juga.platform.data.PreferencesRepository
+import com.juga.platform.data.RecordsStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -15,22 +15,25 @@ class SettingsActivity : AppCompatActivity() {
         lockPortrait()
         setContentView(R.layout.activity_settings)
 
-        val prefs = PreferencesRepository(this)
+        val store = RecordsStore(this)
         val cbPad = findViewById<CheckBox>(R.id.cbPad)
         val cbGhost = findViewById<CheckBox>(R.id.cbGhost)
         val cbCheck = findViewById<CheckBox>(R.id.cbCheckpoints)
-        val cbDust = findViewById<CheckBox>(R.id.cbDust)
+        val cbHaptics = findViewById<CheckBox>(R.id.cbHaptics)
+        val cbSound = findViewById<CheckBox>(R.id.cbSound)
 
         lifecycleScope.launch {
-            cbPad.isChecked = prefs.showPad.first()
-            cbGhost.isChecked = prefs.showGhost.first()
-            cbCheck.isChecked = prefs.checkpointsEnabled.first()
-            cbDust.isChecked = prefs.dustEnabled.first()
+            cbPad.isChecked = store.dPadVisible.first()
+            cbGhost.isChecked = store.ghostEnabled.first()
+            cbCheck.isChecked = store.checkpointsEnabled.first()
+            cbHaptics.isChecked = store.hapticsEnabled.first()
+            cbSound.isChecked = store.soundEnabled.first()
         }
 
-        cbPad.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { prefs.setShowPad(b) } }
-        cbGhost.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { prefs.setShowGhost(b) } }
-        cbCheck.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { prefs.setCheckpointsEnabled(b) } }
-        cbDust.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { prefs.setDustEnabled(b) } }
+        cbPad.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { store.setToggle("dpad", b) } }
+        cbGhost.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { store.setToggle("ghost", b) } }
+        cbCheck.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { store.setToggle("checkpoints", b) } }
+        cbHaptics.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { store.setToggle("haptics", b) } }
+        cbSound.setOnCheckedChangeListener { _, b -> lifecycleScope.launch { store.setToggle("sound", b) } }
     }
 }

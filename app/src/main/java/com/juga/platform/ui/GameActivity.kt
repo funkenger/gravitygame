@@ -13,17 +13,16 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.getSystemService
 import androidx.lifecycle.lifecycleScope
 import com.juga.platform.R
-import com.juga.platform.data.GhostRepository
-import com.juga.platform.data.LevelRepository
-import com.juga.platform.data.PreferencesRepository
+import com.juga.platform.data.GhostStore
+import com.juga.platform.data.LevelLoader
+import com.juga.platform.data.RecordsStore
 import com.juga.platform.game.DPadInputView
 import com.juga.platform.game.GameSurfaceView
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class GameActivity : AppCompatActivity() {
-    private lateinit var gameView: GameSurfaceView
-    private lateinit var dpad: DPadInputView
+    private lateinit var view: GameSurfaceView
     private var up = false
     private var down = false
     private var left = false
@@ -34,78 +33,73 @@ class GameActivity : AppCompatActivity() {
         lockPortrait()
         setContentView(R.layout.activity_game)
 
+        val levelId = intent.getIntExtra("level", 1)
+        val loader = LevelLoader(this)
+        val level = loader.level(levelId)
+        val records = RecordsStore(this)
+        val ghostStore = GhostStore(this)
+
+        val levelText = findViewById<TextView>(R.id.txtLevel)
         val timer = findViewById<TextView>(R.id.txtTimer)
         val best = findViewById<TextView>(R.id.txtBest)
-        gameView = findViewById(R.id.gameView)
-        dpad = findViewById(R.id.dpad)
-
-        val levelId = intent.getIntExtra("level", 1)
-        val levels = LevelRepository(this).loadAllLevels()
-        val level = levels.first { it.id == levelId }
-        val prefs = PreferencesRepository(this)
-        val ghostRepo = GhostRepository(this)
+        levelText.text = "Level $levelId"
+        view = findViewById(R.id.gameView)
+        val dPad = findViewById<DPadInputView>(R.id.dpad)
 
         lifecycleScope.launch {
-            best.text = "Best: ${formatTime(prefs.bestTime(levelId).first())}"
-            dpad.visualEnabled = prefs.showPad.first()
-            gameView.ghostVisible = prefs.showGhost.first()
-            gameView.loadedGhost = ghostRepo.load(levelId)
-            gameView.checkpointsEnabled = prefs.checkpointsEnabled.first()
-            gameView.dustEnabled = prefs.dustEnabled.first()
+            best.text = "Best: ${formatTime(records.bestTime(levelId).first())}"
+            view.showGhost = records.ghostEnabled.first()
+            view.checkpointsEnabled = records.checkpointsEnabled.first()
+            dPad.visualize = records.dPadVisible.first()
+            view.setGhostData(ghostStore.load(levelId))
         }
 
-        gameView.loadLevel(level)
+        view.loadLevel(level)
+        dPad.onState = { view.input(it) }
 
-        dpad.onStateChanged = {
-            gameView.setInput(it)
-        }
-
-        gameView.onHud = { t, _ -> runOnUiThread { timer.text = formatTime(t) } }
-        gameView.onCrashed = {
-            buzz(100)
+        view.onHud = { t -> runOnUiThread { timer.text = formatTime(t) } }
+        view.onCrash = {
+            vibrate(90)
             runOnUiThread {
                 AlertDialog.Builder(this)
                     .setTitle("Crash")
-                    .setMessage("Try again?")
-                    .setPositiveButton("Restart") { _, _ -> gameView.restartLevel() }
-                    .setNegativeButton("Quit") { _, _ -> finish() }
+                    .setItems(arrayOf("Restart", "Exit")) { _, i -> if (i == 0) view.restart() else finish() }
                     .show()
             }
         }
-        gameView.onFinished = { result, ghost ->
-            buzz(180)
+        view.onFinish = { res, ghost ->
             lifecycleScope.launch {
-                val improved = prefs.saveBestTime(levelId, result.timeSec)
-                if (improved) ghostRepo.save(levelId, ghost)
-                prefs.setHighestUnlocked((levelId + 1).coerceAtMost(20))
-                val out = Intent(this@GameActivity, ResultsActivity::class.java)
-                    .putExtra("level", levelId)
-                    .putExtra("time", result.timeSec)
-                    .putExtra("medal", result.medal.name)
-                startActivity(out)
+                val improved = records.saveTime(levelId, res.time)
+                if (improved) ghostStore.save(levelId, ghost)
+                records.unlockNext(levelId, 20)
+                vibrate(160)
+                startActivity(
+                    Intent(this@GameActivity, ResultsActivity::class.java)
+                        .putExtra("level", levelId)
+                        .putExtra("time", res.time)
+                        .putExtra("medal", res.medal.name)
+                )
                 finish()
             }
         }
 
-        findViewById<ImageButton>(R.id.btnRestart).setOnClickListener { gameView.restartLevel() }
-        findViewById<ImageButton>(R.id.btnPause).setOnClickListener { showPauseDialog() }
+        findViewById<ImageButton>(R.id.btnRestart).setOnClickListener { view.restart() }
+        findViewById<ImageButton>(R.id.btnPause).setOnClickListener { pauseDialog() }
     }
 
-    private fun showPauseDialog() {
-        gameView.setPaused(true)
+    private fun pauseDialog() {
+        view.pauseGame(true)
         AlertDialog.Builder(this)
-            .setTitle("Paused")
-            .setItems(arrayOf("Resume", "Restart", "Quit")) { d, which ->
-                when (which) {
-                    0 -> gameView.setPaused(false)
-                    1 -> {
-                        gameView.restartLevel(); gameView.setPaused(false)
-                    }
+            .setTitle("Pause")
+            .setItems(arrayOf("Resume", "Restart", "Exit")) { d, i ->
+                when (i) {
+                    0 -> view.pauseGame(false)
+                    1 -> { view.restart(); view.pauseGame(false) }
                     2 -> finish()
                 }
                 d.dismiss()
             }
-            .setOnDismissListener { gameView.setPaused(false) }
+            .setOnDismissListener { view.pauseGame(false) }
             .show()
     }
 
@@ -117,7 +111,7 @@ class GameActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_DPAD_RIGHT -> right = true
             else -> return super.onKeyDown(keyCode, event)
         }
-        gameView.setHardwareInput(up, down, left, right)
+        view.hardware(up, down, left, right)
         return true
     }
 
@@ -129,16 +123,13 @@ class GameActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_DPAD_RIGHT -> right = false
             else -> return super.onKeyUp(keyCode, event)
         }
-        gameView.setHardwareInput(up, down, left, right)
+        view.hardware(up, down, left, right)
         return true
     }
 
-    private fun buzz(ms: Long) {
+    private fun vibrate(ms: Long) {
         val v = getSystemService<Vibrator>() ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            v.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION") v.vibrate(ms)
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) v.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
+        else @Suppress("DEPRECATION") v.vibrate(ms)
     }
 }

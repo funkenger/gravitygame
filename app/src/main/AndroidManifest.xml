@@ -20,29 +20,13 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <activity
-            android:name=".ui.ResultsActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".ui.GameActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".ui.LevelSelectActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".ui.SettingsActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".ui.MainActivity"
-            android:exported="true"
-            android:screenOrientation="portrait">
+        <activity android:name=".ui.ResultsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.GameActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.LevelSelectActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.SettingsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.TitleActivity" android:exported="true" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

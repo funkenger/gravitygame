@@ -3,7 +3,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:background="#FFFFFF">
 
     <TextView
         android:layout_width="wrap_content"
@@ -11,9 +12,25 @@
         android:text="JugaPlatform"
         android:textStyle="bold"
         android:textSize="36sp"
-        android:layout_marginBottom="32dp"/>
+        android:layout_marginBottom="32dp" />
 
-    <Button android:id="@+id/btnPlay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Play"/>
-    <Button android:id="@+id/btnLevels" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Level Select" android:layout_marginTop="12dp"/>
-    <Button android:id="@+id/btnSettings" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Settings" android:layout_marginTop="12dp"/>
+    <Button
+        android:id="@+id/btnPlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Continue" />
+
+    <Button
+        android:id="@+id/btnLevels"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Level Select"
+        android:layout_marginTop="12dp" />
+
+    <Button
+        android:id="@+id/btnSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Settings"
+        android:layout_marginTop="12dp" />
 </LinearLayout>
