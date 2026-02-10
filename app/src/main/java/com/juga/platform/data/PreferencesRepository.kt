@@ -1,19 +1,15 @@
 package com.juga.platform.data
 
 import android.content.Context
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class PreferencesRepository(context: Context) {
-    private val store = PreferenceDataStoreFactory.create(
-        produceFile = { context.preferencesDataStoreFile("juga_prefs") }
-    )
+    private val store = appDataStore(context)
 
     val showPad: Flow<Boolean> = store.data.map { it[KEY_SHOW_PAD] ?: true }
     val showGhost: Flow<Boolean> = store.data.map { it[KEY_SHOW_GHOST] ?: true }
