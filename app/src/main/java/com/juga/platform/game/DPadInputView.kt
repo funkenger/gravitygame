@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import kotlin.math.atan2
 import kotlin.math.hypot
 
 class DPadInputView @JvmOverloads constructor(
@@ -30,20 +29,25 @@ class DPadInputView @JvmOverloads constructor(
     private var radius = 1f
     private var state = State()
 
-    private val pStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val pRing = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = Color.argb(180, 255, 255, 255)
         strokeWidth = 6f
     }
-    private val pFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val pGuide = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        color = Color.argb(120, 220, 235, 255)
+        strokeWidth = 3f
+    }
+    private val pKnob = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.argb(90, 80, 160, 255)
+        color = Color.argb(130, 70, 140, 255)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         cx = w / 2f
         cy = h / 2f
-        radius = minOf(w, h) * 0.42f
+        radius = minOf(w, h) * 0.43f
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -52,24 +56,21 @@ class DPadInputView @JvmOverloads constructor(
                 val dx = event.x - cx
                 val dy = event.y - cy
                 val mag = hypot(dx.toDouble(), dy.toDouble()).toFloat()
-                val dead = radius * 0.2f
-                val s = if (mag < dead) {
+                val dead = radius * 0.18f
+                val nx = (dx / radius).coerceIn(-1f, 1f)
+                val ny = (dy / radius).coerceIn(-1f, 1f)
+
+                val next = if (mag < dead) {
                     State()
                 } else {
-                    val angle = atan2(dy, dx)
-                    val sector = (((angle + Math.PI) / (Math.PI / 4.0)).toInt()) % 8
-                    when (sector) {
-                        0 -> State(left = true)
-                        1 -> State(left = true, up = true)
-                        2 -> State(up = true)
-                        3 -> State(right = true, up = true)
-                        4 -> State(right = true)
-                        5 -> State(right = true, down = true)
-                        6 -> State(down = true)
-                        else -> State(left = true, down = true)
-                    }
+                    val h = 0.35f
+                    val left = nx < -h
+                    val right = nx > h
+                    val up = ny < -h
+                    val down = ny > h
+                    State(up = up, down = down, left = left, right = right)
                 }
-                updateState(s)
+                updateState(next)
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> updateState(State())
         }
@@ -77,29 +78,31 @@ class DPadInputView @JvmOverloads constructor(
     }
 
     private fun updateState(next: State) {
-        if (next != state) {
-            state = next
-            onStateChanged(state)
-            invalidate()
-        }
+        if (next == state) return
+        state = next
+        onStateChanged(state)
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
         if (!visualEnabled) return
-        canvas.drawCircle(cx, cy, radius, pStroke)
-        canvas.drawLine(cx - radius, cy, cx + radius, cy, pStroke)
-        canvas.drawLine(cx, cy - radius, cx, cy + radius, pStroke)
+
+        canvas.drawCircle(cx, cy, radius, pRing)
+        canvas.drawLine(cx - radius, cy, cx + radius, cy, pGuide)
+        canvas.drawLine(cx, cy - radius, cx, cy + radius, pGuide)
+        canvas.drawLine(cx - radius * 0.7f, cy - radius * 0.7f, cx + radius * 0.7f, cy + radius * 0.7f, pGuide)
+        canvas.drawLine(cx + radius * 0.7f, cy - radius * 0.7f, cx - radius * 0.7f, cy + radius * 0.7f, pGuide)
 
         val knobX = when {
-            state.left -> cx - radius * 0.5f
-            state.right -> cx + radius * 0.5f
+            state.left -> cx - radius * 0.48f
+            state.right -> cx + radius * 0.48f
             else -> cx
         }
         val knobY = when {
-            state.up -> cy - radius * 0.5f
-            state.down -> cy + radius * 0.5f
+            state.up -> cy - radius * 0.48f
+            state.down -> cy + radius * 0.48f
             else -> cy
         }
-        canvas.drawCircle(knobX, knobY, radius * 0.25f, pFill)
+        canvas.drawCircle(knobX, knobY, radius * 0.26f, pKnob)
     }
 }
