@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.wrapper.Wrapper
+import org.gradle.api.tasks.wrapper.Wrapper.DistributionType
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -43,4 +46,11 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+}
+
+
+// Allows running `gradle :app:wrapper` without failing with "Task "wrapper" not found in project :app".
+tasks.register<Wrapper>("wrapper") {
+    gradleVersion = "8.10.2"
+    distributionType = DistributionType.BIN
 }
