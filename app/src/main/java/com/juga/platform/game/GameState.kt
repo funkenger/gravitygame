@@ -17,10 +17,17 @@ class GameState(val level: LevelData) {
     var crashed = false
     var medal = Medal.NONE
 
+    var touchEvents = 0
+    var frameCount = 0
+    var throttleResponseSeen = false
+    var groundedWithin3s = false
+    var selfCheckWarning = ""
+
     val ghostRecording = mutableListOf<GhostSample>()
     var loadedGhost: List<GhostSample> = emptyList()
 
     fun update(dt: Float, checkpointsEnabled: Boolean) {
+        frameCount++
         if (!started && input.any()) started = true
         if (started && !finished && !crashed) timer += dt
 
@@ -53,6 +60,17 @@ class GameState(val level: LevelData) {
                 total <= level.medals.bronze -> Medal.BRONZE
                 else -> Medal.NONE
             }
+        }
+
+        if (timer <= 3f && world.rearGrounded) groundedWithin3s = true
+        if (input.up && world.chassis.velocity.x > 0.6f) throttleResponseSeen = true
+
+        selfCheckWarning = when {
+            frameCount < 30 -> "WARMUP"
+            touchEvents == 0 -> "WARN: no touch events"
+            timer > 3f && !groundedWithin3s -> "WARN: rear wheel not grounded in 3s"
+            timer > 2f && input.up && !throttleResponseSeen -> "WARN: throttle no +X response"
+            else -> "OK"
         }
     }
 }

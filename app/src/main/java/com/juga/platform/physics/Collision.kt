@@ -9,7 +9,8 @@ import kotlin.math.sqrt
 data class WheelContact(
     val normal: Vec2,
     val tangent: Vec2,
-    val normalImpulse: Float
+    val normalImpulse: Float,
+    val frictionImpulse: Float
 )
 
 object Collision {
@@ -22,15 +23,16 @@ object Collision {
         motorForce: Float
     ): WheelContact? {
         val speed = body.velocity.len()
-        val subSteps = ceil((speed / body.radius).toDouble()).toInt().coerceIn(1, 6)
+        val subSteps = ceil((speed / body.radius).toDouble()).toInt().coerceIn(1, 7)
         var contact: WheelContact? = null
+        val start = oldPos.copy()
+        val end = body.position.copy()
         for (i in 0 until subSteps) {
             val t = (i + 1f) / subSteps
-            val interp = Vec2(
-                oldPos.x + (body.position.x - oldPos.x) * t,
-                oldPos.y + (body.position.y - oldPos.y) * t
+            body.position = Vec2(
+                start.x + (end.x - start.x) * t,
+                start.y + (end.y - start.y) * t
             )
-            body.position = interp
             contact = resolveCircleOnce(body, segments, frictionMu, brake, motorForce) ?: contact
         }
         return contact
@@ -59,27 +61,26 @@ object Collision {
         val n = bestN ?: return null
         if (bestPen <= 0f) return null
 
-        body.position.x += n.x * bestPen
-        body.position.y += n.y * bestPen
+        body.position.x += n.x * (bestPen + 1e-3f)
+        body.position.y += n.y * (bestPen + 1e-3f)
 
         val vn = body.velocity.x * n.x + body.velocity.y * n.y
         var normalImpulse = 0f
         if (vn < 0f) {
-            val jn = -vn * 1.6f
-            body.velocity.x += n.x * jn
-            body.velocity.y += n.y * jn
-            normalImpulse = jn
+            normalImpulse = -vn * 1.7f
+            body.velocity.x += n.x * normalImpulse
+            body.velocity.y += n.y * normalImpulse
         }
 
-        val t = Vec2(-n.y, n.x)
-        val vt = body.velocity.x * t.x + body.velocity.y * t.y
-        val maxFric = max(0.6f, frictionMu * normalImpulse + 0.2f)
-        val desired = if (brake) -vt else (motorForce - vt)
+        val tangent = Vec2(-n.y, n.x)
+        val vt = body.velocity.x * tangent.x + body.velocity.y * tangent.y
+        val maxFric = max(0.4f, frictionMu * normalImpulse + if (brake) 0.9f else 0.2f)
+        val desired = (if (brake) -vt * 1.4f else 0f) + motorForce - vt * 0.2f
         val jt = desired.coerceIn(-maxFric, maxFric)
-        body.velocity.x += t.x * jt
-        body.velocity.y += t.y * jt
+        body.velocity.x += tangent.x * jt
+        body.velocity.y += tangent.y * jt
 
-        return WheelContact(n, t, normalImpulse)
+        return WheelContact(n, tangent, normalImpulse, jt)
     }
 
     private fun closestPoint(p: Vec2, s: TrackSegment): Vec2 {

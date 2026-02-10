@@ -51,11 +51,18 @@ class GameActivity : AppCompatActivity() {
             view.showGhost = records.ghostEnabled.first()
             view.checkpointsEnabled = records.checkpointsEnabled.first()
             dPad.visualize = records.dPadVisible.first()
+            view.debugOverlay = records.debugOverlayEnabled.first()
+            view.verticalCentering = records.verticalCenteringEnabled.first()
             view.setGhostData(ghostStore.load(levelId))
         }
 
         view.loadLevel(level)
         dPad.onState = { view.input(it) }
+
+        dPad.post {
+            view.hudHeightPx = 56f * resources.displayMetrics.density
+            view.dpadHeightPx = dPad.height.toFloat() + 20f * resources.displayMetrics.density
+        }
 
         view.onHud = { t -> runOnUiThread { timer.text = formatTime(t) } }
         view.onCrash = {

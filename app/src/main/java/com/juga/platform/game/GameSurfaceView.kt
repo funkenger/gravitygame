@@ -22,6 +22,11 @@ class GameSurfaceView @JvmOverloads constructor(
 
     var showGhost = true
     var checkpointsEnabled = true
+    var debugOverlay = true
+    var verticalCentering = true
+    var hudHeightPx = 76f
+    var dpadHeightPx = 270f
+
     var onHud: (Float) -> Unit = {}
     var onCrash: () -> Unit = {}
     var onFinish: (FinishData, List<com.juga.platform.data.GhostSample>) -> Unit = { _, _ -> }
@@ -31,6 +36,8 @@ class GameSurfaceView @JvmOverloads constructor(
 
     init {
         holder.addCallback(this)
+        isFocusable = true
+        isFocusableInTouchMode = true
     }
 
     fun loadLevel(level: LevelData) {
@@ -44,6 +51,7 @@ class GameSurfaceView @JvmOverloads constructor(
     }
 
     fun input(input: DPadInputView.State) {
+        state?.touchEvents = (state?.touchEvents ?: 0) + 1
         state?.input?.apply {
             up = input.up
             down = input.down
@@ -105,7 +113,17 @@ class GameSurfaceView @JvmOverloads constructor(
         val c = holder.lockCanvas() ?: return
         try {
             val s = state
-            if (s != null) renderer.draw(c, s, showGhost)
+            if (s != null) {
+                renderer.draw(
+                    canvas = c,
+                    state = s,
+                    showGhost = showGhost,
+                    debugOverlay = debugOverlay,
+                    verticalCentering = verticalCentering,
+                    hudPx = hudHeightPx,
+                    dpadPx = dpadHeightPx
+                )
+            }
         } finally {
             holder.unlockCanvasAndPost(c)
         }
@@ -114,7 +132,17 @@ class GameSurfaceView @JvmOverloads constructor(
     fun captureBitmap(): Bitmap {
         val bmp = Bitmap.createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
-        state?.let { renderer.draw(canvas, it, showGhost) }
+        state?.let {
+            renderer.draw(
+                canvas = canvas,
+                state = it,
+                showGhost = showGhost,
+                debugOverlay = debugOverlay,
+                verticalCentering = verticalCentering,
+                hudPx = hudHeightPx,
+                dpadPx = dpadHeightPx
+            )
+        }
         return bmp
     }
 }

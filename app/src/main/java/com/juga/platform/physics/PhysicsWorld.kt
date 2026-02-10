@@ -8,11 +8,11 @@ import kotlin.math.sin
 
 class PhysicsWorld(private val level: LevelData) {
     private val gravity = 12f
-    private val linearDamping = 0.995f
-    private val angularDamping = 0.98f
+    private val linearDamping = 0.998f
+    private val angularDamping = 0.985f
     private val solverIterations = 10
-    private val motorForce = 1.2f
-    private val brakeForce = 2.2f
+    private val motorForce = 7.2f
+    private val brakeForce = 5.8f
     private val leanGround = 18f
     private val leanAir = 26f
 
@@ -28,6 +28,10 @@ class PhysicsWorld(private val level: LevelData) {
 
     var crashed = false
     var finished = false
+    var rearGrounded = false
+    var frontGrounded = false
+    var lastRearNormalImpulse = 0f
+    var lastRearFrictionImpulse = 0f
 
     fun step(dt: Float, inputUp: Boolean, inputDown: Boolean, inputLeft: Boolean, inputRight: Boolean) {
         if (crashed || finished) return
@@ -39,15 +43,20 @@ class PhysicsWorld(private val level: LevelData) {
         rearWheel.integrate(dt, gravity, linearDamping, angularDamping)
         frontWheel.integrate(dt, gravity, linearDamping, angularDamping)
 
-        val rearContact = Collision.solveCircleTrack(
+        rearGrounded = false
+        frontGrounded = false
+        lastRearNormalImpulse = 0f
+        lastRearFrictionImpulse = 0f
+
+        var rearContact = Collision.solveCircleTrack(
             body = rearWheel,
             oldPos = oldRear,
             segments = level.segments,
-            frictionMu = 1.2f,
+            frictionMu = if (inputDown) 1.7f else 1.25f,
             brake = inputDown,
-            motorForce = if (inputUp) motorForce else if (inputDown) -brakeForce else 0f
+            motorForce = 0f
         )
-        val frontContact = Collision.solveCircleTrack(
+        var frontContact = Collision.solveCircleTrack(
             body = frontWheel,
             oldPos = oldFront,
             segments = level.segments,
@@ -56,27 +65,69 @@ class PhysicsWorld(private val level: LevelData) {
             motorForce = 0f
         )
 
-        val grounded = rearContact != null || frontContact != null
-        val torque = when {
+        rearGrounded = rearContact?.normal?.y ?: 0f < -0.2f
+        frontGrounded = frontContact?.normal?.y ?: 0f < -0.2f
+
+        if (inputUp && rearContact != null) {
+            rearWheel.velocity.x += rearContact.tangent.x * motorForce * dt
+            rearWheel.velocity.y += rearContact.tangent.y * motorForce * dt
+        }
+        if (inputDown && rearContact != null) {
+            rearWheel.velocity.x -= rearContact.tangent.x * brakeForce * dt
+            rearWheel.velocity.y -= rearContact.tangent.y * brakeForce * dt
+            rearWheel.velocity.x *= 0.985f
+            rearWheel.velocity.y *= 0.985f
+        }
+
+        val grounded = rearGrounded || frontGrounded
+        val leanTorque = if (grounded) leanGround else leanAir
+        val leanInput = when {
             inputLeft -> -1f
             inputRight -> 1f
             else -> 0f
         }
-        val leanTorque = if (grounded) leanGround else leanAir
-        chassis.angularVelocity += torque * leanTorque * dt * 0.11f
+        chassis.angularVelocity += leanInput * leanTorque * dt * 0.11f
         chassis.angularVelocity = chassis.angularVelocity.coerceIn(-8f, 8f)
 
         repeat(solverIterations) {
             constraints.forEach { it.solve(dt) }
-            Collision.solveCircleTrack(rearWheel, rearWheel.position.copy(), level.segments, 1.2f, inputDown, if (inputUp) motorForce else 0f)
-            Collision.solveCircleTrack(frontWheel, frontWheel.position.copy(), level.segments, if (inputDown) 1.8f else 1.2f, inputDown, 0f)
+            rearContact = Collision.solveCircleTrack(
+                rearWheel,
+                rearWheel.position.copy(),
+                level.segments,
+                if (inputDown) 1.7f else 1.25f,
+                inputDown,
+                if (inputUp && rearGrounded) motorForce * 0.15f else 0f
+            )
+            frontContact = Collision.solveCircleTrack(
+                frontWheel,
+                frontWheel.position.copy(),
+                level.segments,
+                if (inputDown) 1.8f else 1.2f,
+                inputDown,
+                0f
+            )
         }
+
+        rearGrounded = rearContact?.normal?.y ?: 0f < -0.2f
+        frontGrounded = frontContact?.normal?.y ?: 0f < -0.2f
+        lastRearNormalImpulse = rearContact?.normalImpulse ?: 0f
+        lastRearFrictionImpulse = rearContact?.frictionImpulse ?: 0f
 
         val axleAngle = kotlin.math.atan2(frontWheel.position.y - rearWheel.position.y, frontWheel.position.x - rearWheel.position.x)
         chassis.angle = chassis.angle * 0.85f + axleAngle * 0.15f
 
+        clampVel(rearWheel)
+        clampVel(frontWheel)
+        clampVel(chassis)
+
         if (headHit(level.segments)) crashed = true
         if (chassis.position.x >= level.finishX) finished = true
+    }
+
+    private fun clampVel(body: RigidBody2D) {
+        body.velocity.x = body.velocity.x.coerceIn(-25f, 25f)
+        body.velocity.y = body.velocity.y.coerceIn(-25f, 25f)
     }
 
     private fun headHit(segments: List<TrackSegment>): Boolean {

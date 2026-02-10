@@ -17,11 +17,13 @@ class RecordsStore(context: Context) {
     private val store = context.applicationContext.recordsDataStore
 
     val highestUnlocked: Flow<Int> = store.data.map { it[intPreferencesKey("unlocked")] ?: 1 }
-    val ghostEnabled: Flow<Boolean> = store.data.map { it[booleanPreferencesKey("ghost") ] ?: true }
+    val ghostEnabled: Flow<Boolean> = store.data.map { it[booleanPreferencesKey("ghost")] ?: true }
     val checkpointsEnabled: Flow<Boolean> = store.data.map { it[booleanPreferencesKey("checkpoints")] ?: true }
     val dPadVisible: Flow<Boolean> = store.data.map { it[booleanPreferencesKey("dpad")] ?: true }
     val hapticsEnabled: Flow<Boolean> = store.data.map { it[booleanPreferencesKey("haptics")] ?: true }
     val soundEnabled: Flow<Boolean> = store.data.map { it[booleanPreferencesKey("sound")] ?: false }
+    val debugOverlayEnabled: Flow<Boolean> = store.data.map { it[booleanPreferencesKey("debug_overlay")] ?: true }
+    val verticalCenteringEnabled: Flow<Boolean> = store.data.map { it[booleanPreferencesKey("vertical_centering")] ?: true }
 
     fun bestTime(level: Int): Flow<Float?> = store.data.map { it[floatPreferencesKey("best_$level")] }
 
