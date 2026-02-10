@@ -1,0 +1,29 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.juga.platform.game.GameSurfaceView
+        android:id="@+id/gameView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center_vertical">
+        <TextView android:id="@+id/txtTimer" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textColor="#FFF" android:text="00.00"/>
+        <TextView android:id="@+id/txtBest" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textColor="#FFF" android:text="Best: --"/>
+        <ImageButton android:id="@+id/btnPause" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_media_pause"/>
+        <ImageButton android:id="@+id/btnRestart" android:layout_width="40dp" android:layout_height="40dp" android:src="@android:drawable/ic_popup_sync"/>
+    </LinearLayout>
+
+    <com.juga.platform.game.DPadInputView
+        android:id="@+id/dpad"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="16dp"/>
+
+</FrameLayout>

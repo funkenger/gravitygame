@@ -1,0 +1,18 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_horizontal">
+
+    <TextView android:id="@+id/txtTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="28sp" android:textStyle="bold" android:text="Result"/>
+    <TextView android:id="@+id/txtTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="22sp" android:layout_marginTop="16dp"/>
+    <TextView android:id="@+id/txtBest" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="18sp"/>
+    <TextView android:id="@+id/txtMedal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="20sp" android:layout_marginBottom="20dp"/>
+
+    <Button android:id="@+id/btnShare" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Share"/>
+    <Button android:id="@+id/btnNext" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Next Level" android:layout_marginTop="8dp"/>
+    <Button android:id="@+id/btnReplay" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Replay" android:layout_marginTop="8dp"/>
+    <Button android:id="@+id/btnQuit" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Quit" android:layout_marginTop="8dp"/>
+
+</LinearLayout>
